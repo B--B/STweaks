@@ -102,27 +102,21 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	private boolean isKernelSupportOk() {
 		Boolean isOk = false;
 		Log.i(LOG_TAG, "Searching siyah script...");
-        File file = new File("/res/uci.sh");
-        if (file.exists())
-        {
-            Log.i(LOG_TAG, "Kernel script(s) found.");
-        	if (file.canExecute())
-        	{
-        		Log.i(LOG_TAG, "Kernel script(s) OK.");
-        		isOk = true;
-        	}
-        	else
-        	{
-        		Log.e(LOG_TAG, "Kernel script(s) NOT OK!");
-        	}
-        }
-        else
-        {
-        	Log.e(LOG_TAG, "Kernel script(s) NOT found!");        	
-        }
+		String uciExists = Utils.executeRootCommandInThread("test -e /res/uci.sh");
+
+		if ( uciExists == "" || uciExists == "0" )
+		{
+			Log.i(LOG_TAG, "Kernel script(s) found.");
+			// Execution test removed - root user will always be able to execute
+			isOk = true;
+		}
+		else
+		{
+			Log.e(LOG_TAG, "Kernel script(s) NOT found!");
+		}
 		return isOk;
 	}
-	
+
 	boolean parseUIFromXml(InputStream is)
 	{
 		Boolean isOk = true;
@@ -374,25 +368,27 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     	//actionBar.hide();
     
         TextView startTextView = (TextView)findViewById(R.id.textViewStart);
-        kernelSupportOk = isKernelSupportOk();
-        
-        if (!kernelSupportOk && !testingWithNoKernelSupport)
-        {
-        	startTextView.setText(R.string.startmenu_nokernelsupport);
-        }
-        else
-        {
-         	if (Utils.canRunRootCommandsInThread())
-         	{
-         		new LoadDynamicUI().execute();
-         		dialog = ProgressDialog.show(this, getResources().getText(R.string.app_name), getResources().getText(R.string.loading), true);
-         	}
-         	else
-         	{
-         		startTextView.setText(R.string.startmenu_no_root);
-         		Utils.reset();
-         	}
-        }
+
+		if (Utils.canRunRootCommandsInThread())
+		{
+			kernelSupportOk = isKernelSupportOk();
+			if (!kernelSupportOk && !testingWithNoKernelSupport)
+			{
+				startTextView.setText(R.string.startmenu_nokernelsupport);
+				Utils.reset();
+			}
+			else
+			{
+				new LoadDynamicUI().execute();
+				dialog = ProgressDialog.show(this, getResources().getText(R.string.app_name), getResources().getText(R.string.loading), true);
+			}
+		}
+		else
+		{
+			kernelSupportOk = false;
+			startTextView.setText(R.string.startmenu_no_root);
+			Utils.reset();
+		}
 
 //    	{
 //    	    public void run() 
